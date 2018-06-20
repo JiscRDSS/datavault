@@ -4,6 +4,7 @@
        xmlns:mvc="http://www.springframework.org/schema/mvc"
        xmlns:tx="http://www.springframework.org/schema/tx"
        xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/context
@@ -13,7 +14,7 @@
         http://www.springframework.org/schema/tx
         http://www.springframework.org/schema/tx/spring-tx.xsd
         http://www.springframework.org/schema/rabbit
-        http://www.springframework.org/schema/rabbit/spring-rabbit-1.4.xsd">
+        http://www.springframework.org/schema/rabbit/spring-rabbit-1.4.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
     <context:component-scan base-package="org.datavaultplatform.broker.controllers"/>
 
@@ -75,11 +76,6 @@
         <property name="archiveStoreService" ref="archiveStoreService" />
         <property name="jobsService" ref="jobsService" />
         <property name="sender" ref="sender" />
-        <property name="optionsDir" value="${optionsDir:#{null}}" />
-        <property name="bucketName" value="${s3.bucketName:#{null}}" />
-        <property name="region" value="${s3.region:#{null}}" />
-        <property name="awsAccessKey" value="${s3.awsAccessKey:#{null}}" />
-        <property name="awsSecretKey" value="${s3.awsSecretKey:#{null}}" />
     </bean>
 
     <bean id="statisticsController" class="org.datavaultplatform.broker.controllers.StatisticsController">
@@ -143,9 +139,58 @@
         <property name="archiveStoreService" ref="archiveStoreService" />
     </bean>
 
+    <bean id="localFileArchiveStore" class="org.datavaultplatform.common.model.ArchiveStore">
+        <property name="storageClass" value="${archivestore.file.storageClass}" />
+        <property name="label" value="${archivestore.file.label}" />
+        <property name="retrieveEnabled" value="${archivestore.file.retrieveEnabled}" />
+        <property name="properties">
+            <util:map map-class="java.util.HashMap">
+                <entry key="rootPath" value="${archiveDir}"/>
+            </util:map>
+        </property>
+        <property name="enabledOnDbInit" value="${archivestore.file.enabled}" />
+    </bean>
+
+    <bean id="s3ArchiveStore" class="org.datavaultplatform.common.model.ArchiveStore">
+        <property name="storageClass" value="${archivestore.s3.storageClass}" />
+        <property name="label" value="${archivestore.s3.label}" />
+        <property name="retrieveEnabled" value="${archivestore.s3.retrieveEnabled}" />
+        <property name="properties">
+            <util:map map-class="java.util.HashMap">
+                <entry key="s3.bucketName" value="${s3.bucketName:#{null}}"/>
+                <entry key="s3.region" value="${s3.region:#{null}}"/>
+                <entry key="s3.awsAccessKey" value="${s3.awsAccessKey:#{null}}"/>
+                <entry key="s3.awsRegion" value="${s3.awsSecretKey:#{null}}"/>
+            </util:map>
+        </property>
+        <property name="enabledOnDbInit" value="${archivestore.s3.enabled}" />
+    </bean>
+
+    <bean id="tsmArchiveStore" class="org.datavaultplatform.common.model.ArchiveStore">
+        <property name="storageClass" value="${archivestore.tms.storageClass}" />
+        <property name="label" value="${archivestore.tms.label}" />
+        <property name="retrieveEnabled" value="${archivestore.tms.retrieveEnabled}" />
+        <property name="properties">
+            <util:map map-class="java.util.HashMap">
+                <entry key="optionsDir" value="${optionsDir}"/>
+            </util:map>
+        </property>
+        <property name="enabledOnDbInit" value="${archivestore.tms.enabled}" />
+    </bean>
+
+    <bean id="archiveStoresList" class="org.springframework.beans.factory.config.ListFactoryBean">
+        <property name="sourceList">
+            <list>
+                <ref bean="localFileArchiveStore" />
+                <ref bean="s3ArchiveStore" />
+                <ref bean="tsmArchiveStore" />
+            </list>
+        </property>
+    </bean>
+
     <bean id="initialiseDatabase" class="org.datavaultplatform.broker.scheduled.InitialiseDatabase">
         <property name="archiveStoreService" ref="archiveStoreService" />
-        <property name="archiveDir" value="${archiveDir}" />
+        <property name="archiveStoresList" ref="archiveStoresList" />
     </bean>
 
     <!-- Documentation using jsondoc -->

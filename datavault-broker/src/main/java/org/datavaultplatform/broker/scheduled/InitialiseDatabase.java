@@ -8,7 +8,6 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.List;
 
 
@@ -22,33 +21,35 @@ public class InitialiseDatabase {
     private static final Logger logger = LoggerFactory.getLogger(InitialiseDatabase.class);
 
     private ArchiveStoreService archiveStoreService;
-    private String archiveDir;
+
+    private List<ArchiveStore> archiveStoresList;
 
     public void setArchiveStoreService(ArchiveStoreService archiveStoreService) {
         this.archiveStoreService = archiveStoreService;
     }
 
-    public void setArchiveDir(String archiveDir) {
-        this.archiveDir = archiveDir;
+    public void setArchiveStoresList(List<ArchiveStore> archiveStoresList) {
+        this.archiveStoresList = archiveStoresList;
     }
 
-
     @EventListener
-    public void handleContextRefresh(ContextRefreshedEvent event) {
+    public void handleContextRefresh(@SuppressWarnings("unused") ContextRefreshedEvent event) {
+        initialiseArchiveStores();
+    }
 
-        logger.info("Initialising database");
+    protected void initialiseArchiveStores() {
+        logger.info("Initialising ArchiveStores");
 
         List<ArchiveStore> archiveStores = archiveStoreService.getArchiveStores();
-        if (archiveStores.isEmpty()) {
-            HashMap<String,String> storeProperties = new HashMap<String,String>();
-            storeProperties.put("rootPath", archiveDir);
-            ArchiveStore tsm = new ArchiveStore("org.datavaultplatform.common.storage.impl.TivoliStorageManager", storeProperties, "Default archive store (TSM)", true);
-            ArchiveStore s3 = new ArchiveStore("org.datavaultplatform.common.storage.impl.S3Cloud", storeProperties, "Cloud archive store", false);
-            //ArchiveStore local = new ArchiveStore("org.datavaultplatform.common.storage.impl.LocalFileSystem", storeProperties, "Default archive store (Local)", true);
-            archiveStoreService.addArchiveStore(tsm);
-            archiveStoreService.addArchiveStore(s3);
-            //archiveStoreService.addArchiveStore(local);
-        }
 
+        if (archiveStores.isEmpty()) {
+            for (ArchiveStore store : archiveStoresList) {
+                logger.info("Processing store `" + store.getStorageClass() + "`");
+
+                if (store.isEnabledOnDbInit()) {
+                    archiveStoreService.addArchiveStore(store);
+                }
+            }
+        }
     }
 }
