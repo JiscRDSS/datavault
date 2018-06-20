@@ -37,11 +37,6 @@ public class DepositsController {
     private ArchiveStoreService archiveStoreService;
     private JobsService jobsService;
     private Sender sender;
-    private String optionsDir;
-    private String bucketName;
-    private String region;
-    private String awsAccessKey;
-    private String awsSecretKey;
 
     private static final Logger logger = LoggerFactory.getLogger(DepositsController.class);
     
@@ -87,26 +82,6 @@ public class DepositsController {
 
     public void setSender(Sender sender) {
         this.sender = sender;
-    }
-    
-    public void setOptionsDir(String optionsDir) {
-    	this.optionsDir = optionsDir;
-    }
-    
-    public void setBucketName(String bucketName) {
-    	this.bucketName = bucketName;
-    }
-
-    public void setRegion(String region) {
-    	this.region = region;
-    }
-
-    public void setAwsAccessKey(String awsAccessKey) {
-    	this.awsAccessKey = awsAccessKey;
-    }
-
-    public void setAwsSecretKey(String awsSecretKey) {
-    	this.awsSecretKey = awsSecretKey;
     }
 
     @RequestMapping(value = "/deposits/{depositid}", method = RequestMethod.GET)
@@ -191,7 +166,6 @@ public class DepositsController {
             throw new Exception("No configured archive storage");
         }
         
-        archiveStores = this.addArchiveSpecificOptions(archiveStores);
         // Get metadata content from the external provider (bypass database cache)
         String externalMetadata = externalMetadataService.getDatasetContent(vault.getDataset().getID());
         
@@ -335,7 +309,6 @@ public class DepositsController {
         ArchiveStore archiveStore = archiveStoreService.getForRetrieval();
         List<ArchiveStore> archiveStores = new ArrayList<ArchiveStore>();
         archiveStores.add(archiveStore);
-        archiveStores = this.addArchiveSpecificOptions(archiveStores);
 
         // Find the Archive that matches the ArchiveStore.
         String archiveID = null;
@@ -438,42 +411,5 @@ public class DepositsController {
         vaultsService.checkRetentionPolicy(deposit.getVault().getID());
 
         return true;
-    }
-    
-    private List<ArchiveStore> addArchiveSpecificOptions(List<ArchiveStore> archiveStores) {
-    	if (archiveStores != null && ! archiveStores.isEmpty()) { 
-	    	for (ArchiveStore archiveStore : archiveStores) {
-		        if (archiveStore.getStorageClass().equals("org.datavaultplatform.common.storage.impl.TivoliStorageManager")) {
-		        	HashMap<String, String> asProps = archiveStore.getProperties();
-		        	if (this.optionsDir != null && ! this.optionsDir.equals("")) {
-		        		asProps.put("optionsDir", this.optionsDir);
-		        	}
-		        	archiveStore.setProperties(asProps);
-		        }
-		        
-		        if (archiveStore.getStorageClass().equals("org.datavaultplatform.common.storage.impl.S3Cloud")) {
-		        	HashMap<String, String> asProps = archiveStore.getProperties();
-		        	if (this.bucketName != null && ! this.bucketName.equals("")) {  
-		        		asProps.put("s3.bucketName", this.bucketName);
-		        	}
-		        	if (this.region != null && ! this.region.equals("")) {  
-		        		asProps.put("s3.region", this.region);
-		        	}
-		        	if (this.awsAccessKey != null && ! this.awsAccessKey.equals("")) {  
-		        		asProps.put("s3.awsAccessKey", this.awsAccessKey);
-		        	}
-		        	if (this.awsSecretKey != null && ! this.awsSecretKey.equals("")) {  
-		        		asProps.put("s3.awsSecretKey", this.awsSecretKey);
-		        	}
-
-		        	//if (this.authDir != null && ! this.authDir.equals("")) {
-		        	//	asProps.put("authDir", this.authDir);
-		        	//}
-		        	archiveStore.setProperties(asProps);
-		        }
-	        }
-    	}
-    	
-    	return archiveStores;
     }
 }
