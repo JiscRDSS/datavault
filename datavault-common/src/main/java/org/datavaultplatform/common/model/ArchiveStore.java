@@ -44,6 +44,9 @@ public class ArchiveStore {
     // NOTE: this is not a secure mechanism for storing credentials!
     @Lob
     private HashMap<String,String> properties;
+
+    // A flag that signifies whether this ArchiveStore should be enabled when the database is initialized
+    private boolean enabledOnDbInit;
     
     public ArchiveStore() {}
     public ArchiveStore(String storageClass, HashMap<String,String> properties, String label, boolean retrieveEnabled) {
@@ -51,6 +54,15 @@ public class ArchiveStore {
         this.properties = properties;
         this.label = label;
         this.retrieveEnabled = retrieveEnabled;
+    }
+    // When using a `List` of `ArchiveStore` instances to initialize the database use this class signature as it has the
+    // additional `enabledOnInitialize` flag to signify whether the specific `storageClass` should be enabled on db init
+    public ArchiveStore(String storageClass, HashMap<String,String> properties, String label, boolean retrieveEnabled, boolean enabledOnDbInit) {
+        this.storageClass = storageClass;
+        this.properties = properties;
+        this.label = label;
+        this.retrieveEnabled = retrieveEnabled;
+        this.enabledOnDbInit = enabledOnDbInit;
     }
 
     public String getID() { return id; }
@@ -82,4 +94,8 @@ public class ArchiveStore {
     public void setRetrieveEnabled(boolean retrieveEnabled) {
         this.retrieveEnabled = retrieveEnabled;
     }
+
+    public boolean isEnabledOnDbInit() { return enabledOnDbInit; }
+
+    public void setEnabledOnDbInit(boolean enabledOnDbInit) { this.enabledOnDbInit = enabledOnDbInit; }
 }
